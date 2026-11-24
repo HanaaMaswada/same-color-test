@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Same Color Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm lab instrument, nothing competing with the stimulus
+   IDEA: a colour-proofing booth with three viewing panels
+   PICTURE: the three backgrounds themselves, large, with the test squares
+   COLOUR and TYPE: neutral greys only (UI must not bias perception); Space Grotesk + Inter
+   LAYOUT: stage first and full width, controls below in two calm columns */
+:root{color-scheme:light dark;--bg:light-dark(#efefed,#1c1c1c);--panel:light-dark(#ffffff,#262626);--ink:light-dark(#151515,#ececec);--mute:light-dark(#5a5a58,#a8a8a8);--line:light-dark(#d6d6d3,#3a3a3a);--acc:light-dark(#151515,#ececec)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(20px,3vw,40px) max(4vw,16px);max-width:1240px;margin:0 auto}
+h1{font:600 clamp(26px,3.4vw,38px)/1.05 "Space Grotesk",Inter,sans-serif;margin:0 0 6px;text-wrap:balance}
+.lede{color:var(--mute);margin:0 0 18px;max-width:70ch}
+.stage{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-radius:6px;overflow:hidden;position:relative}
+.cell{position:relative;aspect-ratio:1/1;display:grid;place-items:center}
+.sq{width:var(--s,64px);height:var(--s,64px)}
+.lab{position:absolute;left:10px;bottom:8px;font-size:13px;padding:2px 6px;border-radius:3px;background:rgba(255,255,255,.85);color:#111}
+.proof{position:absolute;left:0;right:0;top:50%;height:calc(var(--s,64px)/3);transform:translateY(-50%);display:none}
+.stage.showproof .proof{display:block}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+h2{font:600 18px/1.2 "Space Grotesk",Inter,sans-serif;margin:0 0 10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+button{font:500 15px Inter,sans-serif;min-height:44px;padding:0 14px;border-radius:5px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button[aria-pressed=true]{background:var(--acc);color:var(--panel);border-color:var(--acc)}
+button:focus-visible,input:focus-visible{outline:2px solid #2a78d6;outline-offset:2px}
+.sl{display:grid;grid-template-columns:22px minmax(0,1fr) 64px;gap:10px;align-items:center;margin:6px 0}
+.sl b{font-weight:600}
+input[type=range]{width:100%;height:44px;accent-color:#666}
+input[type=number]{font:16px Inter,sans-serif;width:64px;min-height:40px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);text-align:right}
+input[type=color]{width:52px;height:44px;border:1px solid var(--line);border-radius:5px;background:none;padding:2px}
+.res{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;font-variant-numeric:tabular-nums;margin-top:10px}
+.res dt{color:var(--mute)}.res dd{margin:0;white-space:nowrap}
+.chip{display:inline-block;width:14px;height:14px;border-radius:2px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
+ol{margin:6px 0 0;padding-left:20px;color:var(--mute)}ol li{margin:3px 0}
+.note{font-size:13px;color:var(--mute);margin-top:8px}
+.copied{font-size:14px;color:var(--mute);margin-left:6px}
+@media(max-width:700px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:480px){.lab{font-size:12px;left:4px;bottom:4px}}
+</style>
+</head>
+<body>
+<main class="band">
+<h1>Same color, different look</h1>
+<p class="lede">The three small squares start with exactly the same RGB value. Compare their lightness, saturation and size, then adjust the square on white until it looks like the one on black.</p>
+
+<div class="stage" id="stage">
+  <div class="cell" id="c0"><div class="proof"></div><div class="sq" id="s0"></div><span class="lab" id="l0">Black</span></div>
+  <div class="cell" id="c1"><div class="proof"></div><div class="sq" id="s1"></div><span class="lab" id="l1">White</span></div>
+  <div class="cell" id="c2"><div class="proof"></div><div class="sq" id="s2"></div><span class="lab" id="l2">Blue</span></div>
+</div>
+
+<div class="grid">
+  <section class="card">
+    <h2>1. Test color and setup</h2>
+    <div class="row" id="presets"></div>
+    <div class="row"><label for="pick">Custom</label><input type="color" id="pick" value="#e68c28"></div>
+    <div class="row" id="bgs"></div>
+    <div class="sl"><b>S</b><input type="range" id="size" min="24" max="140" value="64" aria-label="Square size"><output id="sizeo">64 px</output></div>
+    <div class="row"><button id="proofBtn" aria-pressed="false">Show proof strip</button></div>
+    <p class="note">The proof strip joins the three squares with one bar of the same color, to show they are identical.</p>
+  </section>
+
+  <section class="card">
+    <h2>2. Match: square on white</h2>
+    <div id="sliders"></div>
+    <div class="row"><button id="reset">Reset to original</button><button id="copy">Copy result</button><span class="copied" id="copied" aria-live="polite"></span></div>
+    <dl class="res" id="res"></dl>
+  </section>
+</div>
+
+<section class="card" style="margin-top:16px">
+  <h2>How to run the test</h2>
+  <ol>
+    <li>Pick the test color (orange 230, 140, 40 or grey 128, 128, 128). Keep zoom at 100 %.</li>
+    <li>Look at each square for a few seconds. Is it equally light, equally saturated and equally large?</li>
+    <li>Move the sliders until the square on white looks the same as the one on black. Note the values.</li>
+    <li>Take a screenshot of the stage with the matched values visible.</li>
+  </ol>
+</section>
+</main>
+
+<script>
+{
+const presets=[{n:"Orange 230,140,40",c:[230,140,40]},{n:"Grey 128,128,128",c:[128,128,128]}];
+const bgOpts=[{n:"Blue",c:[0,60,255]},{n:"Red",c:[220,20,30]},{n:"Green",c:[0,170,60]}];
+let base=[230,140,40], match=[230,140,40], third=bgOpts[0];
+const $=id=>document.getElementById(id);
+const rgb=a=>`rgb(${a[0]},${a[1]},${a[2]})`;
+const hex=a=>"#"+a.map(v=>v.toString(16).padStart(2,"0")).join("");
+const fromHex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+
+$("presets").innerHTML=presets.map((p,i)=>`<button data-p="${i}" aria-pressed="${i===0}"><span class="chip" style="background:${rgb(p.c)}"></span>${p.n}</button>`).join("");
+$("bgs").innerHTML='<span style="color:var(--mute)">Third background:</span>'+bgOpts.map((b,i)=>`<button data-b="${i}" aria-pressed="${i===0}"><span class="chip" style="background:${rgb(b.c)}"></span>${b.n}</button>`).join("");
+$("sliders").innerHTML=["R","G","B"].map((k,i)=>`<div class="sl"><b>${k}</b><input type="range" min="0" max="255" id="r${i}" aria-label="${k} value"><input type="number" min="0" max="255" id="n${i}" aria-label="${k} number"></div>`).join("");
+
+function paint(){
+  $("c0").style.background="#000";$("c1").style.background="#fff";$("c2").style.background=rgb(third.c);
+  $("l2").textContent=third.n;
+  $("s0").style.background=rgb(base);$("s2").style.background=rgb(base);$("s1").style.background=rgb(match);
+  document.querySelectorAll(".proof").forEach(p=>p.style.background=rgb(base));
+  for(let i=0;i<3;i++){$("r"+i).value=match[i];$("n"+i).value=match[i];}
+  const d=match.map((v,i)=>v-base[i]), sg=v=>(v>0?"+":"")+v;
+  $("res").innerHTML=`<dt>Original (on black)</dt><dd><span class="chip" style="background:${rgb(base)}"></span>RGB ${base.join(", ")}</dd>
+  <dt>Matched (on white)</dt><dd><span class="chip" style="background:${rgb(match)}"></span>RGB ${match.join(", ")}</dd>
+  <dt>Change needed</dt><dd>ΔR ${sg(d[0])} · ΔG ${sg(d[1])} · ΔB ${sg(d[2])}</dd>`;
+}
+function setBase(c){base=c.slice();match=c.slice();$("pick").value=hex(c);paint();}
+
+$("presets").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  document.querySelectorAll("[data-p]").forEach(x=>x.setAttribute("aria-pressed",x===b));setBase(presets[+b.dataset.p].c);});
+$("bgs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  document.querySelectorAll("[data-b]").forEach(x=>x.setAttribute("aria-pressed",x===b));third=bgOpts[+b.dataset.b];paint();});
+$("pick").addEventListener("input",e=>{document.querySelectorAll("[data-p]").forEach(x=>x.setAttribute("aria-pressed",false));setBase(fromHex(e.target.value));});
+for(let i=0;i<3;i++){
+  $("r"+i).addEventListener("input",e=>{match[i]=+e.target.value;paint();});
+  $("n"+i).addEventListener("input",e=>{const v=Math.max(0,Math.min(255,+e.target.value||0));match[i]=v;paint();});
+}
+$("size").addEventListener("input",e=>{document.documentElement.style.setProperty("--s",e.target.value+"px");$("sizeo").textContent=e.target.value+" px";});
+$("proofBtn").addEventListener("click",e=>{const on=e.currentTarget.getAttribute("aria-pressed")!=="true";
+  e.currentTarget.setAttribute("aria-pressed",on);$("stage").classList.toggle("showproof",on);});
+$("reset").addEventListener("click",()=>{match=base.slice();paint();});
+$("copy").addEventListener("click",async()=>{
+  const t=`Original (on black): RGB ${base.join(", ")}\nMatched (on white): RGB ${match.join(", ")}\nChange: ΔR ${match[0]-base[0]}, ΔG ${match[1]-base[1]}, ΔB ${match[2]-base[2]}`;
+  try{await navigator.clipboard.writeText(t);$("copied").textContent="Copied";}catch(err){$("copied").textContent="Copy not allowed here – write the values down";}
+});
+paint();
+}
+</script>
+</body>
+</html>
